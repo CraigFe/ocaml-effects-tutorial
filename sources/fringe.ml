@@ -11,7 +11,7 @@ type ('elt,'cont) iterator = ('elt -> unit) -> 'cont -> unit
 type 'elt generator = unit -> 'elt option
 
 let generate (type elt) (i : (elt, 'cont) iterator) (c : 'cont) : elt generator =
-  let module M = struct effect Yield : elt -> unit end in
+  let module M = struct exception%effect Yield : elt -> unit end in
   let open M in
   let rec step = ref (fun () ->
     i (fun v -> perform (Yield v)) c;
@@ -20,7 +20,7 @@ let generate (type elt) (i : (elt, 'cont) iterator) (c : 'cont) : elt generator 
   in
   let loop () =
     try !step () with
-    | effect (Yield v) k -> (step := continue k; Some v)
+    | [%effect? (Yield v), k] -> (step := continue k; Some v)
   in
   loop
 

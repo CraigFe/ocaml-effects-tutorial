@@ -1,0 +1,28 @@
+(library
+ (name import)
+ (modules import))
+
+(executables
+ (names
+  async_await
+  cooperative
+  echo
+  echo_async
+  echo_unix
+  exceptions
+  fringe
+  gdb
+  generator
+  input_line_eff
+  input_line_eff2
+  input_line_exn
+  input_line_exn2
+  msg_passing
+  state1
+  state2)
+ (modules :standard \ import)
+ (flags
+  (:standard -w -6-8-27-32-33-39-50 -open Import))
+ (preprocess
+  (pps ppx_effects))
+ (libraries import unix))

@@ -3,7 +3,7 @@ type ('elt,'container) iterator = ('elt -> unit) -> 'container -> unit
 type 'elt generator = unit -> 'elt option
 
 let generate (type elt) (i : (elt, 'container) iterator) (c : 'container) : elt generator =
-  let module M = struct effect Yield : elt -> unit end in
+  let module M = struct exception%effect Yield : elt -> unit end in
   let open M in
   failwith "not implemented"
 

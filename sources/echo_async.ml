@@ -26,26 +26,26 @@ module Aio : Aio = struct
 
   type 'a promise = 'a _promise ref
 
-  effect Async : (unit -> 'a) -> 'a promise
+  exception%effect Async : (unit -> 'a) -> 'a promise
   let async f = perform (Async f)
 
-  effect Yield : unit
+  exception%effect Yield : unit
   let yield () = perform Yield
 
-  effect Await : 'a promise -> 'a
+  exception%effect Await : 'a promise -> 'a
   let await p = perform (Await p)
 
   type file_descr = Unix.file_descr
   type sockaddr = Unix.sockaddr
   type msg_flag = Unix.msg_flag
 
-  effect Accept : file_descr -> (file_descr * sockaddr)
+  exception%effect Accept : file_descr -> (file_descr * sockaddr)
   let accept fd = perform (Accept fd)
 
-  effect Recv : file_descr * bytes * int * int * msg_flag list -> int
+  exception%effect Recv : file_descr * bytes * int * int * msg_flag list -> int
   let recv fd buf pos len mode = perform (Recv (fd, buf, pos, len, mode))
 
-  effect Send : file_descr * bytes * int * int * msg_flag list -> int
+  exception%effect Send : file_descr * bytes * int * int * msg_flag list -> int
   let send fd bus pos len mode = perform (Send (fd, bus, pos, len, mode))
 
   (********************)
@@ -107,14 +107,14 @@ module Aio : Aio = struct
             List.iter (fun k -> enqueue (fun () -> continue k v)) l;
             pr := Done v;
             schedule ()
-        | effect (Async f) k ->
+        | [%effect? (Async f), k] ->
             let pr = ref (Waiting []) in
             enqueue (fun () -> continue k pr);
             fork pr f
-        | effect Yield k ->
+        | [%effect? Yield, k] ->
             enqueue (continue k);
             schedule ()
-        | effect (Await p) k ->
+        | [%effect? (Await p), k] ->
             begin match !p with
             | Done v -> continue k v
             | Waiting l -> begin
@@ -122,9 +122,9 @@ module Aio : Aio = struct
                 schedule ()
               end
             end
-        | effect (Accept fd) k -> failwith "not implemented"
-        | effect (Send (fd,buf,pos,len,mode)) k -> failwith "not implemented"
-        | effect (Recv (fd,buf,pos,len,mode) as e) k ->
+        | [%effect? (Accept fd), k] -> failwith "not implemented"
+        | [%effect? (Send (fd,buf,pos,len,mode)), k] -> failwith "not implemented"
+        | [%effect? (Recv (fd,buf,pos,len,mode) as e), k] ->
             if ready_to_read fd then
               continue k (Unix.recv fd buf pos len mode)
             else begin
