@@ -1,4 +1,4 @@
-effect Xchg : int -> int
+exception%effect Xchg : int -> int
 
 (* status of a computation *)
 type status =
@@ -9,7 +9,7 @@ type status =
 let step f v () =
   match f v with
   | _ -> Done
-  | effect (Xchg m) k -> Paused (m, k)
+  | [%effect? (Xchg m), k] -> Paused (m, k)
 
 (* Run both of the computations concurrenty *)
 let rec run_both a b =

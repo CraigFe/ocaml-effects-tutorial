@@ -21,13 +21,13 @@ module Scheduler : Scheduler = struct
 
   type 'a promise = 'a _promise ref
 
-  effect Async : (unit -> 'a) -> 'a promise
+  exception%effect Async : (unit -> 'a) -> 'a promise
   let async f = perform (Async f)
 
-  effect Yield : unit
+  exception%effect Yield : unit
   let yield () = perform Yield
 
-  effect Await : 'a promise -> 'a
+  exception%effect Await : 'a promise -> 'a
   let await p = perform (Await p)
 
   let q = Queue.create ()
@@ -41,12 +41,12 @@ module Scheduler : Scheduler = struct
       fun pr main ->
         match main () with
         | v -> failwith "Value case not implemented"
-        | effect (Async f) k ->
+        | [%effect? (Async f), k] ->
             failwith "Async not implemented"
-        | effect Yield k ->
+        | [%effect? Yield, k] ->
             enqueue (continue k);
             dequeue ()
-        | effect (Await p) k ->
+        | [%effect? (Await p), k] ->
             begin match !p with
             | Done v -> continue k v
             | Waiting l -> failwith "Await.Waiting not implemented"

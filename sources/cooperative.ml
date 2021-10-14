@@ -11,10 +11,10 @@ end
 
 module Scheduler : Scheduler = struct
 
-  effect Async : (unit -> 'a) -> unit
+  exception%effect Async : (unit -> 'a) -> unit
   let async f = perform (Async f)
 
-  effect Yield : unit
+  exception%effect Yield : unit
   let yield () = perform Yield
 
   let q = Queue.create ()
@@ -27,10 +27,10 @@ module Scheduler : Scheduler = struct
     fun main ->
       match main () with
       | _ -> dequeue ()
-      | effect (Async f) k ->
+      | [%effect? (Async f), k] ->
           enqueue (continue k);
           run f
-      | effect Yield k ->
+      | [%effect? Yield, k] ->
           enqueue (continue k);
           dequeue ()
 end
